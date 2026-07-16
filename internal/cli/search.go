@@ -6,9 +6,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"apifox-api/go-version/internal/binding"
-	"apifox-api/go-version/internal/openapi"
-	"apifox-api/go-version/internal/snapshot"
+	"github.com/akirousnow/apifox-api-go/internal/binding"
+	"github.com/akirousnow/apifox-api-go/internal/openapi"
+	"github.com/akirousnow/apifox-api-go/internal/snapshot"
 )
 
 func newSearchCommand(dependencies Dependencies) *cobra.Command {

@@ -6,10 +6,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"apifox-api/go-version/internal/binding"
-	"apifox-api/go-version/internal/openapi"
-	"apifox-api/go-version/internal/snapshot"
-	"apifox-api/go-version/internal/typesgen"
+	"github.com/akirousnow/apifox-api-go/internal/binding"
+	"github.com/akirousnow/apifox-api-go/internal/openapi"
+	"github.com/akirousnow/apifox-api-go/internal/snapshot"
+	"github.com/akirousnow/apifox-api-go/internal/typesgen"
 )
 
 const getUsage = `用法: apifox-api get <method> <path> [--moduleId N]

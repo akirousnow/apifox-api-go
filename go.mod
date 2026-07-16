@@ -1,4 +1,4 @@
-module apifox-api/go-version
+module github.com/akirousnow/apifox-api-go
 
 go 1.25.0
 

@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"apifox-api/go-version/internal/binding"
-	"apifox-api/go-version/internal/snapshot"
+	"github.com/akirousnow/apifox-api-go/internal/binding"
+	"github.com/akirousnow/apifox-api-go/internal/snapshot"
 )
 
 func newRefreshCommand(dependencies Dependencies) *cobra.Command {

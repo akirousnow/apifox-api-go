@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"apifox-api/go-version/internal/buildinfo"
-	"apifox-api/go-version/internal/cli"
+	"github.com/akirousnow/apifox-api-go/internal/buildinfo"
+	"github.com/akirousnow/apifox-api-go/internal/cli"
 )
 
 func TestVersionFlagAndSubcommandDefault(t *testing.T) {

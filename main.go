@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"strings"
 
-	"apifox-api/go-version/internal/cli"
+	"github.com/akirousnow/apifox-api-go/internal/cli"
 )
 
 func main() {

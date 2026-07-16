@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"apifox-api/go-version/internal/binding"
-	"apifox-api/go-version/internal/cli"
+	"github.com/akirousnow/apifox-api-go/internal/binding"
+	"github.com/akirousnow/apifox-api-go/internal/cli"
 )
 
 func setupBoundWorkspace(t *testing.T, moduleIDs []int) (homeDir string, workspace string) {

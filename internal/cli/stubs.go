@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"apifox-api/go-version/internal/binding"
+	"github.com/akirousnow/apifox-api-go/internal/binding"
 )
 
 func newModuleAwareStubCommand(dependencies Dependencies, use string, short string) *cobra.Command {

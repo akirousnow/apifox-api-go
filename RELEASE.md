@@ -1,4 +1,4 @@
-# go-version release guide
+# apifox-api-go release guide
 
 Production distribution for the native `apifox-api` Go CLI, plus the npm compatibility bridge for one stable migration cycle.
 
@@ -28,7 +28,7 @@ Build flags (frozen in `scripts/release.sh`):
 ## Build a release locally
 
 ```bash
-cd go-version
+# run from repository root
 export GOTOOLCHAIN=go1.26.5   # pin when available
 export VERSION=0.1.0
 export COMMIT="$(git rev-parse --short HEAD)"
@@ -63,7 +63,7 @@ apifox-api <semver> (commit <sha>)
 Link-time injection:
 
 ```bash
-go build -ldflags "-X apifox-api/go-version/internal/buildinfo.Version=0.1.0 -X apifox-api/go-version/internal/buildinfo.Commit=$(git rev-parse --short HEAD)" -o apifox-api .
+go build -ldflags "-X github.com/akirousnow/apifox-api-go/internal/buildinfo.Version=0.1.0 -X github.com/akirousnow/apifox-api-go/internal/buildinfo.Commit=$(git rev-parse --short HEAD)" -o apifox-api .
 ```
 
 Defaults when not injected: `dev` / `unknown`.
@@ -74,11 +74,11 @@ Until the module is published under a public module path matching your hosting (
 
 ```bash
 # From a clone (local path / replace module path when published)
-cd go-version
-go install -ldflags "-X apifox-api/go-version/internal/buildinfo.Version=0.1.0 -X apifox-api/go-version/internal/buildinfo.Commit=$(git rev-parse --short HEAD)" .
+# run from repository root
+go install -ldflags "-X github.com/akirousnow/apifox-api-go/internal/buildinfo.Version=0.1.0 -X github.com/akirousnow/apifox-api-go/internal/buildinfo.Commit=$(git rev-parse --short HEAD)" .
 
 # After the module is published (example):
-# GOTOOLCHAIN=go1.26.5 go install example.com/apifox-api/go-version@v0.1.0
+# GOTOOLCHAIN=go1.26.5 go install github.com/akirousnow/apifox-api-go@v0.1.0
 ```
 
 The resulting `apifox-api` binary is a pure native executable: **no Node or Bun runtime**.
@@ -121,16 +121,16 @@ If a Go-related change ships and npm users need the previous TS CLI:
 ```yaml
 # pseudo — wire to your CI
 - run: |
-    cd go-version
+    # run from repository root
     export GOTOOLCHAIN=go1.26.5
     export VERSION=${{ github.ref_name }}
     export COMMIT=${{ github.sha }}
     ./scripts/release.sh
-- run: ./go-version/scripts/smoke.sh go-version/dist/release/linux-amd64/apifox-api
+- run: ./scripts/smoke.sh dist/release/linux-amd64/apifox-api
 - uses: actions/upload-artifact@v4
   with:
     name: apifox-api-release
-    path: go-version/dist/release/**
+    path: dist/release/**
 ```
 
 Never print `APIFOX_AUTH_KEY` or other secrets in release logs.

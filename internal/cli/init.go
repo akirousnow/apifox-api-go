@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"apifox-api/go-version/internal/binding"
+	"github.com/akirousnow/apifox-api-go/internal/binding"
 )
 
 const initUsage = `用法: apifox-api init <projectId> [--moduleIds 5,8,12] [--authKey <token>]

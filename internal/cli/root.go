@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"apifox-api/go-version/internal/buildinfo"
-	"apifox-api/go-version/internal/snapshot"
+	"github.com/akirousnow/apifox-api-go/internal/buildinfo"
+	"github.com/akirousnow/apifox-api-go/internal/snapshot"
 )
 
 // Streams holds process I/O for the CLI. Tests inject buffers instead of os streams.

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"apifox-api/go-version/internal/binding"
-	"apifox-api/go-version/internal/cli"
+	"github.com/akirousnow/apifox-api-go/internal/binding"
+	"github.com/akirousnow/apifox-api-go/internal/cli"
 )
 
 func TestInitAndConfigCommands(t *testing.T) {

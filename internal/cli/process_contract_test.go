@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"apifox-api/go-version/internal/binding"
-	"apifox-api/go-version/internal/cli"
-	"apifox-api/go-version/internal/snapshot"
+	"github.com/akirousnow/apifox-api-go/internal/binding"
+	"github.com/akirousnow/apifox-api-go/internal/cli"
+	"github.com/akirousnow/apifox-api-go/internal/snapshot"
 )
 
 const processContractSecret = "SUPER-SECRET-TOKEN-NEVER-LEAK"

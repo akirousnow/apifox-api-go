@@ -9,7 +9,7 @@ cd "${ROOT_DIR}"
 VERSION="${VERSION:-dev}"
 COMMIT="${COMMIT:-$(git rev-parse --short HEAD 2>/dev/null || echo unknown)}"
 OUT_DIR="${OUT_DIR:-${ROOT_DIR}/dist/release}"
-MODULE_PATH="apifox-api/go-version"
+MODULE_PATH="github.com/akirousnow/apifox-api-go"
 LDFLAGS="-s -w -X ${MODULE_PATH}/internal/buildinfo.Version=${VERSION} -X ${MODULE_PATH}/internal/buildinfo.Commit=${COMMIT}"
 
 # Prefer pinned release toolchain when installed; otherwise use active go.
@@ -71,7 +71,7 @@ checksum_file="${OUT_DIR}/checksums.txt"
 sbom_file="${OUT_DIR}/sbom.spdx.json"
 provenance_file="${OUT_DIR}/provenance.json"
 go_version_output="$("${GO_BIN}" version | tr -d '\r')"
-module_path="$(go list -m -f '{{.Path}}' 2>/dev/null || echo apifox-api/go-version)"
+module_path="$(go list -m -f '{{.Path}}' 2>/dev/null || echo github.com/akirousnow/apifox-api-go)"
 cobra_version="$(go list -m -f '{{.Version}}' github.com/spf13/cobra 2>/dev/null || echo unknown)"
 
 cat > "${sbom_file}" << SBOM
@@ -80,10 +80,10 @@ cat > "${sbom_file}" << SBOM
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "apifox-api-${VERSION}",
-  "documentNamespace": "https://github.com/local/apifox-api/go-version@${VERSION}+${COMMIT}",
+  "documentNamespace": "https://github.com/akirousnow/apifox-api-go@${VERSION}+${COMMIT}",
   "creationInfo": {
     "created": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-    "creators": ["Tool: go-version/scripts/release.sh", "Organization: apifox-api"]
+    "creators": ["Tool: scripts/release.sh", "Organization: apifox-api"]
   },
   "packages": [
     {
@@ -119,7 +119,7 @@ cat > "${provenance_file}" << PROV
     {"name": "apifox-api", "version": "${VERSION}", "commit": "${COMMIT}"}
   ],
   "predicate": {
-    "builder": {"id": "go-version/scripts/release.sh"},
+    "builder": {"id": "scripts/release.sh"},
     "buildType": "https://go.dev/ref/mod#go-build",
     "invocation": {
       "parameters": {

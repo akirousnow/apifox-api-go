@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"apifox-api/go-version/internal/binding"
+	"github.com/akirousnow/apifox-api-go/internal/binding"
 )
 
 const configUsage = `用法: apifox-api config set-auth-key <token>

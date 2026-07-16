@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"apifox-api/go-version/internal/binding"
+	"github.com/akirousnow/apifox-api-go/internal/binding"
 )
 
 func TestAuthFingerprintStable(t *testing.T) {
