@@ -86,11 +86,16 @@ apifox-api init 6307449 --moduleIds 5,8,12 --authKey 'your-token'
 # 3) 拉取 / 刷新 OpenAPI 快照
 apifox-api refresh
 
-# 4) 搜索接口
+# 4) 搜索接口（路径 / 摘要 / operationId 等）
 apifox-api search pets
 apifox-api search --method POST
 apifox-api search pets dog --mode and --limit 10
 apifox-api search pets --json
+
+# 4b) 按字段搜索（query/path 参数名+描述、body 嵌套字段、主 2xx JSON 响应字段）
+apifox-api search-fields phone
+apifox-api search-fields email --method GET --json
+apifox-api search-fields phone email --mode and --limit 10
 
 # 5) 生成 TypeScript 类型（stdout 纯 TS）
 apifox-api get GET /users/{id}
@@ -108,6 +113,7 @@ apifox-api
 │   └── set-auth-key <token>
 ├── module [moduleId]
 ├── search [keywords...] [--method] [--mode] [--limit] [--json] [--moduleId]
+├── search-fields [keywords...] [--method] [--mode] [--limit] [--json] [--moduleId]
 ├── get [method] [path] [--method] [--moduleId]
 └── refresh
 ```
@@ -201,6 +207,48 @@ apifox-api search pets --json --moduleId 5
 ```
 
 JSON 字段概要：`total`, `showing`, `truncated`, `limit`, `module`, `stale`, `items[]`（含 `method`, `path`, `summary`, `tags`, `operationId`）。
+
+---
+
+### `search-fields`
+
+从本地 Snapshot 缓存按 **字段** 离线检索接口（与 `search` 相同的缓存 / stale / 进程契约）。
+
+匹配范围（锁定决策）：
+
+- query / path 参数的 **name + description**
+- request body 嵌套字段（深度上限 8，`$ref` 环安全）
+- 主 2xx JSON response 字段
+- **不**索引 header / cookie 参数
+
+```bash
+apifox-api search-fields [keywords...] [flags]
+```
+
+| 标志 | 默认 | 说明 |
+|------|------|------|
+| `--method` | `""` | HTTP method 过滤（`GET` / `POST` / …） |
+| `--mode` | `or` | 关键词组合：`or` \| `and` |
+| `--limit` | `20` | 结果窗口，有效范围 1–50 |
+| `--json` | `false` | 机器可读 JSON |
+| `--moduleId` | — | 一次性覆盖当前 module，不改写 `.current-module` |
+
+规则：必须提供 **keywords**（仅 `--method` 会被拒绝；空关键词拒绝）。
+
+Markdown 表格列：`方法 | 路径 | 接口名称 | 命中字段`。
+
+示例：
+
+```bash
+apifox-api search-fields phone
+apifox-api search-fields email --method GET
+apifox-api search-fields phone email --mode and --limit 10
+apifox-api search-fields phone --json --moduleId 5
+```
+
+与 `search` 的区别：`search` 匹配 path / summary / operationId / tags 等接口元数据；`search-fields` 匹配参数与 schema 字段，并输出命中字段（JSON 为 `items[].matches[]`）。
+
+JSON 字段概要：`total`, `showing`, `truncated`, `limit`, `module`, `stale`, `items[]`（含 `method`, `path`, `summary`, `tags`, `operationId`, **`matches`**）。
 
 ---
 

@@ -19,7 +19,7 @@ Agent / 协作者入口：项目是什么、怎么开发、怎么发版。
 
 - Project Binding：把工作区目录绑到 Apifox `projectId`（全局注册表 `~/.apifox-api.json`）
 - 离线优先：OpenAPI 快照缓存在 `<binding>/.cache/apifox-api/`
-- 搜索接口、`get` 生成 TypeScript 类型、`refresh` 强制拉远程
+- 搜索接口（`search` 元数据 / `search-fields` 字段）、`get` 生成 TypeScript 类型、`refresh` 强制拉远程
 
 **命令树：**
 
@@ -30,6 +30,7 @@ apifox-api
 ├── config set-auth-key <token>
 ├── module [moduleId]
 ├── search [keywords...] [--method] [--mode] [--limit] [--json] [--moduleId]
+├── search-fields [keywords...] [--method] [--mode] [--limit] [--json] [--moduleId]
 ├── get [method] [path] [--method] [--moduleId]
 └── refresh
 ```

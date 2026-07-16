@@ -55,6 +55,7 @@ func NewRoot(dependencies Dependencies) *cobra.Command {
 	rootCommand.AddCommand(newConfigCommand(dependencies))
 	rootCommand.AddCommand(newModuleCommand(dependencies))
 	rootCommand.AddCommand(newSearchCommand(dependencies))
+	rootCommand.AddCommand(newSearchFieldsCommand(dependencies))
 	rootCommand.AddCommand(newGetCommand(dependencies))
 	rootCommand.AddCommand(newRefreshCommand(dependencies))
 
