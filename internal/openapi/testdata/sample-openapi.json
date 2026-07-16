@@ -1,0 +1,723 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Fixture API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/users": {
+      "get": {
+        "summary": "List users",
+        "operationId": "listUsers",
+        "tags": [
+          "User"
+        ],
+        "description": "Return all users in the tenant",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create user",
+        "operationId": "createUser",
+        "tags": [
+          "User"
+        ],
+        "description": "Create a new user account",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created"
+          }
+        }
+      }
+    },
+    "/orders/{orderId}": {
+      "get": {
+        "summary": "Get order",
+        "operationId": "getOrder",
+        "tags": [
+          "Order"
+        ],
+        "description": "Fetch order by id",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "operationId": "healthCheck",
+        "tags": [
+          "System"
+        ],
+        "description": "Liveness probe"
+      }
+    },
+    "/items/1": {
+      "get": {
+        "summary": "Get item 1",
+        "operationId": "getItem1",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 1",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/2": {
+      "get": {
+        "summary": "Get item 2",
+        "operationId": "getItem2",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 2",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/3": {
+      "get": {
+        "summary": "Get item 3",
+        "operationId": "getItem3",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 3",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/4": {
+      "get": {
+        "summary": "Get item 4",
+        "operationId": "getItem4",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 4",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/5": {
+      "get": {
+        "summary": "Get item 5",
+        "operationId": "getItem5",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 5",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/6": {
+      "get": {
+        "summary": "Get item 6",
+        "operationId": "getItem6",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 6",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/7": {
+      "get": {
+        "summary": "Get item 7",
+        "operationId": "getItem7",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 7",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/8": {
+      "get": {
+        "summary": "Get item 8",
+        "operationId": "getItem8",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 8",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/9": {
+      "get": {
+        "summary": "Get item 9",
+        "operationId": "getItem9",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 9",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/10": {
+      "get": {
+        "summary": "Get item 10",
+        "operationId": "getItem10",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 10",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/11": {
+      "get": {
+        "summary": "Get item 11",
+        "operationId": "getItem11",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 11",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/12": {
+      "get": {
+        "summary": "Get item 12",
+        "operationId": "getItem12",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 12",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/13": {
+      "get": {
+        "summary": "Get item 13",
+        "operationId": "getItem13",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 13",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/14": {
+      "get": {
+        "summary": "Get item 14",
+        "operationId": "getItem14",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 14",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/15": {
+      "get": {
+        "summary": "Get item 15",
+        "operationId": "getItem15",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 15",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/16": {
+      "get": {
+        "summary": "Get item 16",
+        "operationId": "getItem16",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 16",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/17": {
+      "get": {
+        "summary": "Get item 17",
+        "operationId": "getItem17",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 17",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/18": {
+      "get": {
+        "summary": "Get item 18",
+        "operationId": "getItem18",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 18",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/19": {
+      "get": {
+        "summary": "Get item 19",
+        "operationId": "getItem19",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 19",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/20": {
+      "get": {
+        "summary": "Get item 20",
+        "operationId": "getItem20",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 20",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/21": {
+      "get": {
+        "summary": "Get item 21",
+        "operationId": "getItem21",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 21",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/22": {
+      "get": {
+        "summary": "Get item 22",
+        "operationId": "getItem22",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 22",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/23": {
+      "get": {
+        "summary": "Get item 23",
+        "operationId": "getItem23",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 23",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/24": {
+      "get": {
+        "summary": "Get item 24",
+        "operationId": "getItem24",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 24",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/25": {
+      "get": {
+        "summary": "Get item 25",
+        "operationId": "getItem25",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 25",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/26": {
+      "get": {
+        "summary": "Get item 26",
+        "operationId": "getItem26",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 26",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/27": {
+      "get": {
+        "summary": "Get item 27",
+        "operationId": "getItem27",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 27",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/28": {
+      "get": {
+        "summary": "Get item 28",
+        "operationId": "getItem28",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 28",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/29": {
+      "get": {
+        "summary": "Get item 29",
+        "operationId": "getItem29",
+        "tags": [
+          "Item"
+        ],
+        "description": "Fetch catalog item 29",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

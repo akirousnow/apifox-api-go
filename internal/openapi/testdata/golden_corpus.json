@@ -1,0 +1,212 @@
+{
+  "endpoints": [
+    {
+      "Method": "GET",
+      "Path": "/users",
+      "Summary": "List users",
+      "OperationID": "listUsers",
+      "Tags": [
+        "User"
+      ],
+      "Description": "Return all users",
+      "SchemaNames": [
+        "UserList"
+      ]
+    },
+    {
+      "Method": "POST",
+      "Path": "/users",
+      "Summary": "Create user",
+      "OperationID": "createUser",
+      "Tags": [
+        "User"
+      ],
+      "Description": "Create a user",
+      "SchemaNames": [
+        "User"
+      ]
+    },
+    {
+      "Method": "GET",
+      "Path": "/users/login",
+      "Summary": "用户登录查询",
+      "OperationID": "queryLogin",
+      "Tags": [
+        "Auth"
+      ],
+      "Description": "查询登录状态",
+      "SchemaNames": []
+    },
+    {
+      "Method": "POST",
+      "Path": "/auth/login",
+      "Summary": "用户登录",
+      "OperationID": "loginUser",
+      "Tags": [
+        "Auth"
+      ],
+      "Description": "密码登录",
+      "SchemaNames": [
+        "LoginRequest"
+      ]
+    },
+    {
+      "Method": "GET",
+      "Path": "/orders",
+      "Summary": "List orders",
+      "OperationID": "listOrders",
+      "Tags": [
+        "Order"
+      ],
+      "Description": "orders catalog",
+      "SchemaNames": [
+        "OrderList"
+      ]
+    },
+    {
+      "Method": "GET",
+      "Path": "/user-profile",
+      "Summary": "Get user profile",
+      "OperationID": "getUserProfile",
+      "Tags": [
+        "User"
+      ],
+      "Description": "kebab path",
+      "SchemaNames": []
+    },
+    {
+      "Method": "GET",
+      "Path": "/user_profile",
+      "Summary": "Get user_profile snake",
+      "OperationID": "get_user_profile",
+      "Tags": [
+        "User"
+      ],
+      "Description": "snake path",
+      "SchemaNames": []
+    }
+  ],
+  "cases": [
+    {
+      "name": "chinese-exact-login",
+      "keywords": [
+        "用户登录"
+      ],
+      "want": [
+        "POST /auth/login",
+        "GET /users/login"
+      ]
+    },
+    {
+      "name": "camel-subword-list",
+      "keywords": [
+        "list"
+      ],
+      "want": [
+        "GET /orders",
+        "GET /users"
+      ]
+    },
+    {
+      "name": "pascal-create",
+      "keywords": [
+        "Create"
+      ],
+      "want": [
+        "POST /users"
+      ]
+    },
+    {
+      "name": "snake-profile",
+      "keywords": [
+        "user_profile"
+      ],
+      "want": [
+        "GET /user_profile",
+        "GET /user-profile",
+        "GET /users",
+        "POST /users",
+        "GET /users/login",
+        "POST /auth/login"
+      ]
+    },
+    {
+      "name": "kebab-profile",
+      "keywords": [
+        "user-profile"
+      ],
+      "want": [
+        "GET /user-profile",
+        "GET /user_profile",
+        "GET /users",
+        "POST /users",
+        "GET /users/login",
+        "POST /auth/login"
+      ]
+    },
+    {
+      "name": "multi-keyword-order-a",
+      "keywords": [
+        "user",
+        "login"
+      ],
+      "want": [
+        "GET /users/login",
+        "POST /auth/login",
+        "GET /user-profile",
+        "GET /user_profile",
+        "GET /users",
+        "POST /users"
+      ]
+    },
+    {
+      "name": "multi-keyword-order-b",
+      "keywords": [
+        "login",
+        "user"
+      ],
+      "want": [
+        "GET /users/login",
+        "POST /auth/login",
+        "GET /user-profile",
+        "GET /user_profile",
+        "GET /users",
+        "POST /users"
+      ]
+    },
+    {
+      "name": "and-mode-user-login",
+      "keywords": [
+        "user",
+        "login"
+      ],
+      "mode": "and",
+      "want": [
+        "GET /users/login",
+        "POST /auth/login"
+      ]
+    },
+    {
+      "name": "method-post-only",
+      "keywords": [],
+      "method": "POST",
+      "want": [
+        "POST /auth/login",
+        "POST /users"
+      ]
+    },
+    {
+      "name": "tie-break-users-path",
+      "keywords": [
+        "users"
+      ],
+      "want": [
+        "GET /users",
+        "POST /users",
+        "GET /users/login",
+        "GET /user-profile",
+        "GET /user_profile"
+      ]
+    }
+  ]
+}

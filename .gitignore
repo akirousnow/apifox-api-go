@@ -1,0 +1,6 @@
+
+# release artifacts
+dist/
+docs/
+.scratch/
+.cache/
