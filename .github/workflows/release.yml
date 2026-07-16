@@ -1,0 +1,200 @@
+name: Release
+
+# Push to the `release` branch (with a VERSION file) → build + GitHub Release.
+# Also supports: tag push (v*) and manual workflow_dispatch.
+on:
+  push:
+    branches:
+      - release
+    tags:
+      - 'v[0-9]+.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Semver without leading v (e.g. 0.1.0 or 0.1.0-rc.1). Empty = auto from tag / VERSION file.'
+        required: false
+        type: string
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  GOTOOLCHAIN: go1.26.5
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go 1.26.5
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.5'
+          cache: true
+
+      - name: Resolve version
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SHORT_SHA="$(echo "${GITHUB_SHA}" | cut -c1-7)"
+          PUBLISH=false
+          VERSION=""
+
+          if [[ -n "${{ inputs.version || '' }}" ]]; then
+            VERSION="${{ inputs.version }}"
+            VERSION="${VERSION#v}"
+            PUBLISH=true
+          elif [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+            PUBLISH=true
+          elif [[ -f VERSION ]]; then
+            VERSION="$(tr -d '[:space:]' < VERSION)"
+            if [[ -n "${VERSION}" ]]; then
+              VERSION="${VERSION#v}"
+              PUBLISH=true
+            fi
+          else
+            if TAG="$(git describe --tags --exact-match 2>/dev/null)"; then
+              VERSION="${TAG#v}"
+              PUBLISH=true
+            fi
+          fi
+
+          # release 分支推送但没有 VERSION/tag：仍构建并上传 artifact，不创建 GitHub Release
+          if [[ -z "${VERSION}" ]]; then
+            VERSION="dev+${SHORT_SHA}"
+            PUBLISH=false
+          fi
+
+          if [[ "${VERSION}" =~ [[:space:]/\\] ]]; then
+            echo "Invalid VERSION: ${VERSION}" >&2
+            exit 1
+          fi
+
+          PRERELEASE=false
+          if [[ "${VERSION}" == *-* ]]; then
+            PRERELEASE=true
+          fi
+
+          {
+            echo "version=${VERSION}"
+            echo "commit=${SHORT_SHA}"
+            echo "publish=${PUBLISH}"
+            echo "prerelease=${PRERELEASE}"
+            echo "tag=v${VERSION}"
+          } >> "${GITHUB_OUTPUT}"
+
+          echo "VERSION=${VERSION} COMMIT=${SHORT_SHA} PUBLISH=${PUBLISH} PRERELEASE=${PRERELEASE}"
+
+      - name: Cross-compile release binaries
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          COMMIT: ${{ steps.meta.outputs.commit }}
+          GOTOOLCHAIN: go1.26.5
+        run: |
+          set -euo pipefail
+          chmod +x scripts/release.sh scripts/smoke.sh
+          ./scripts/release.sh
+
+      - name: Smoke test (linux/amd64)
+        run: ./scripts/smoke.sh dist/release/linux-amd64/apifox-api
+
+      - name: Package release assets
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          ASSETS_DIR="dist/assets"
+          rm -rf "${ASSETS_DIR}"
+          mkdir -p "${ASSETS_DIR}"
+
+          package_unix() {
+            local pair="$1"
+            local goos="${pair%-*}"
+            local goarch="${pair#*-}"
+            local archive="apifox-api_${VERSION}_${goos}_${goarch}.tar.gz"
+            tar -C "dist/release/${pair}" -czf "${ASSETS_DIR}/${archive}" apifox-api
+          }
+
+          package_windows() {
+            local pair="$1"
+            local goos="${pair%-*}"
+            local goarch="${pair#*-}"
+            local archive="apifox-api_${VERSION}_${goos}_${goarch}.zip"
+            (cd "dist/release/${pair}" && zip -q "${GITHUB_WORKSPACE}/${ASSETS_DIR}/${archive}" apifox-api.exe)
+          }
+
+          package_unix linux-amd64
+          package_unix linux-arm64
+          package_unix darwin-amd64
+          package_unix darwin-arm64
+          package_windows windows-amd64
+          package_windows windows-arm64
+
+          cp dist/release/checksums.txt \
+             dist/release/sbom.spdx.json \
+             dist/release/provenance.json \
+             "${ASSETS_DIR}/"
+
+          (
+            cd "${ASSETS_DIR}"
+            sha256sum ./*.tar.gz ./*.zip > checksums-archives.txt
+          )
+
+          ls -la "${ASSETS_DIR}"
+          cat "${ASSETS_DIR}/checksums-archives.txt"
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: apifox-api-${{ steps.meta.outputs.version }}
+          path: |
+            dist/assets/**
+            dist/release/**
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish GitHub Release
+        if: steps.meta.outputs.publish == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          PRERELEASE: ${{ steps.meta.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+
+          # Use gh to create/update the release. Do NOT git-push tags here:
+          # that would re-trigger this workflow via the tags: filter.
+          extra_flags=()
+          if [[ "${PRERELEASE}" == "true" ]]; then
+            extra_flags+=(--prerelease)
+          fi
+
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists; uploading assets with --clobber"
+            gh release upload "${TAG}" dist/assets/* --clobber
+            if [[ "${PRERELEASE}" == "true" ]]; then
+              gh release edit "${TAG}" --title "apifox-api ${TAG}" --prerelease
+            else
+              gh release edit "${TAG}" --title "apifox-api ${TAG}" --prerelease=false
+            fi
+          else
+            # gh creates the tag if missing when --target is set (no extra tag push)
+            gh release create "${TAG}" dist/assets/* \
+              --title "apifox-api ${TAG}" \
+              --generate-notes \
+              --target "${GITHUB_SHA}" \
+              "${extra_flags[@]+"${extra_flags[@]}"}"
+          fi
