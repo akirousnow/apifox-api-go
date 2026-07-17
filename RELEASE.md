@@ -63,22 +63,22 @@ apifox-api <semver> (commit <sha>)
 Link-time injection:
 
 ```bash
-go build -ldflags "-X github.com/akirousnow/apifox-api-go/internal/buildinfo.Version=0.1.0 -X github.com/akirousnow/apifox-api-go/internal/buildinfo.Commit=$(git rev-parse --short HEAD)" -o apifox-api .
+go build -ldflags "-X github.com/akirousnow/apifox-api-go/internal/buildinfo.Version=0.1.0 -X github.com/akirousnow/apifox-api-go/internal/buildinfo.Commit=$(git rev-parse --short HEAD)" -o apifox-api ./cmd/apifox-api
 ```
 
 Defaults when not injected: `dev` / `unknown`.
 
 ## `go install` path
 
-Until the module is published under a public module path matching your hosting (replace with the real import path when published):
+The executable lives under `cmd/apifox-api`, so `go install` produces a binary named `apifox-api`:
 
 ```bash
-# From a clone (local path / replace module path when published)
+# From a clone
 # run from repository root
-go install -ldflags "-X github.com/akirousnow/apifox-api-go/internal/buildinfo.Version=0.1.0 -X github.com/akirousnow/apifox-api-go/internal/buildinfo.Commit=$(git rev-parse --short HEAD)" .
+go install -ldflags "-X github.com/akirousnow/apifox-api-go/internal/buildinfo.Version=0.1.0 -X github.com/akirousnow/apifox-api-go/internal/buildinfo.Commit=$(git rev-parse --short HEAD)" ./cmd/apifox-api
 
-# After the module is published (example):
-# GOTOOLCHAIN=go1.26.5 go install github.com/akirousnow/apifox-api-go@v0.1.0
+# Install a published version:
+# GOTOOLCHAIN=go1.26.5 go install github.com/akirousnow/apifox-api-go/cmd/apifox-api@latest
 ```
 
 The resulting `apifox-api` binary is a pure native executable: **no Node or Bun runtime**.

@@ -15,10 +15,7 @@ Apifox OpenAPI 原生 CLI（Go）。支持 Apifox Project Binding、自定义 Op
 
 ```bash
 # 安装最新已发布版本（有 tag 后）
-go install github.com/akirousnow/apifox-api-go@latest
-
-# 或指定版本
-go install github.com/akirousnow/apifox-api-go@v0.1.0
+go install github.com/akirousnow/apifox-api-go/cmd/apifox-api@latest
 ```
 
 安装后确保 `$GOPATH/bin` 或 `$HOME/go/bin` 在 `PATH` 中：
@@ -36,7 +33,7 @@ cd apifox-api-go
 
 go build -o apifox-api \
   -ldflags "-X github.com/akirousnow/apifox-api-go/internal/buildinfo.Version=0.1.0 -X github.com/akirousnow/apifox-api-go/internal/buildinfo.Commit=$(git rev-parse --short HEAD)" \
-  .
+  ./cmd/apifox-api
 ./apifox-api version
 ```
 
@@ -334,7 +331,7 @@ Binding 解析：从 CWD 向上 walk-up 到 home / 文件系统根。
 go test ./...
 
 # 本地构建
-go build -o apifox-api .
+go build -o apifox-api ./cmd/apifox-api
 
 # 多平台发布构建（见 RELEASE.md）
 export VERSION=0.1.0

@@ -39,7 +39,7 @@ apifox-api
 **包布局（概要）：**
 
 ```text
-main.go                 # 入口
+cmd/apifox-api/main.go  # 可执行入口（go install 产物名为 apifox-api）
 internal/cli/           # Cobra 命令与进程契约
 internal/binding/       # 注册表、auth、current module
 internal/snapshot/      # 缓存路径、加载、远程 export
@@ -64,12 +64,12 @@ scripts/smoke.sh        # --version / version / --help
 go test ./...
 
 # 本地构建
-go build -o apifox-api .
+go build -o apifox-api ./cmd/apifox-api
 
 # 带版本信息
 go build -o apifox-api \
   -ldflags "-X github.com/akirousnow/apifox-api-go/internal/buildinfo.Version=0.1.0 -X github.com/akirousnow/apifox-api-go/internal/buildinfo.Commit=$(git rev-parse --short HEAD)" \
-  .
+  ./cmd/apifox-api
 ```
 
 常用环境变量：
