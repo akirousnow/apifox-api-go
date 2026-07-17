@@ -4,10 +4,11 @@ package binding
 
 // RegistryBinding is one workspace → Apifox project mapping stored in the global registry.
 type RegistryBinding struct {
-	ProjectID   string  `json:"projectId"`
-	AuthKey     string  `json:"authKey,omitempty"`
-	ModuleIDs   []int   `json:"moduleIds"`
-	ProjectName string  `json:"projectName,omitempty"`
+	ProjectID    string `json:"projectId"`
+	AuthKey      string `json:"authKey,omitempty"`
+	ModuleIDs    []int  `json:"moduleIds"`
+	ProjectName  string `json:"projectName,omitempty"`
+	CustomSource string `json:"custom,omitempty"`
 }
 
 // GlobalRegistry is schema v1 of ~/.apifox-api.json.
@@ -24,6 +25,7 @@ type ResolvedBinding struct {
 	AuthFingerprint string
 	ModuleIDs       []int
 	ProjectName     string
+	CustomSource    string
 	WorkspaceDir    string
 	RegistryPath    string
 	StoredAuthKey   string

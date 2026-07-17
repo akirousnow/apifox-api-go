@@ -1,6 +1,6 @@
 # apifox-api-go
 
-Apifox OpenAPI 原生 CLI（Go）。支持 Project Binding、离线快照检索、TypeScript 类型生成。
+Apifox OpenAPI 原生 CLI（Go）。支持 Apifox Project Binding、自定义 OpenAPI/Swagger 文档、离线快照检索、TypeScript 类型生成。
 
 - 仓库：https://github.com/akirousnow/apifox-api-go
 - 二进制名：`apifox-api`
@@ -83,6 +83,10 @@ apifox-api init <projectId>
 # 多模块示例：
 apifox-api init 6307449 --moduleIds 5,8,12 --authKey 'your-token'
 
+# 或绑定本地 / HTTP(S) 自定义文档（无需 Auth Key）
+apifox-api init --custom ./swagger-docs.json
+apifox-api init admin-api --custom https://example.com/swagger-docs.json
+
 # 3) 拉取 / 刷新 OpenAPI 快照
 apifox-api refresh
 
@@ -108,7 +112,7 @@ apifox-api get /users/{id}              # 该 path 下全部 method
 ```text
 apifox-api
 ├── version
-├── init <projectId> [--moduleIds ...] [--authKey ...]
+├── init [projectId] [--moduleIds ...] [--authKey ...] [--custom URL|文件]
 ├── config
 │   └── set-auth-key <token>
 ├── module [moduleId]
@@ -127,6 +131,13 @@ apifox-api
 
 成功输出写 **stdout**，错误 / 过期警告写 **stderr**。退出码：`0` 成功，`1` 失败。
 
+查看帮助：
+
+```bash
+apifox-api help       # 命令列表会直接提示 init 的 projectId / --custom 两种用法
+apifox-api help init  # 展开 init 的完整语法、说明与限制
+```
+
 ---
 
 ### `version`
@@ -140,21 +151,26 @@ apifox-api version
 
 ### `init`
 
-把 **当前工作目录** 绑定到一个 Apifox `projectId`，写入全局注册表 `~/.apifox-api.json`。
+把 **当前工作目录** 绑定到一个 Apifox `projectId` 或自定义接口文档，写入全局注册表 `~/.apifox-api.json`。
 
 ```bash
 apifox-api init <projectId> [--moduleIds 5,8,12] [--authKey <token>]
+apifox-api init [name] --custom <URL|文件路径>
 ```
 
 | 参数 / 标志 | 说明 |
 |-------------|------|
-| `<projectId>` | 必填，Apifox 项目 ID |
+| `<projectId>` | Apifox 模式必填，Apifox 项目 ID |
+| `[name]` | 自定义模式可选的本地标识；省略时根据规范化来源生成稳定标识 |
 | `--moduleIds` | 逗号分隔的正整数模块 ID；省略 = 仅默认模块 |
 | `--authKey` | 本 binding 的 Access Token；省略则回退环境变量等 |
+| `--custom` | HTTP(S) URL、`file://` URL 或本地 JSON 文件路径；相对路径基于 init 所在目录解析 |
 
 Auth 优先级（init）：`--authKey` → `APIFOX_AUTH_KEY` → 已有 binding → 全局 key（仅预取，不落盘）。
 
 多模块时会写入 `.current-module`（取第一个 moduleId）。
+
+自定义模式会在 `init` 时立即读取、校验并缓存文档；Swagger 2.0 会在 CLI 内部归一化后供 `search`、`search-fields`、`get` 共用。自定义模式不发送或要求 Apifox Auth，且不能与 `--moduleIds` / `--authKey` 同时使用。URL 中的凭据与查询参数不会打印到输出，但完整来源会保存在权限为 `0600` 的全局注册表中，以便后续 `refresh`。
 
 ---
 
@@ -282,7 +298,7 @@ apifox-api get /users/{id} --moduleId 5
 
 ### `refresh`
 
-强制刷新 **所有** 已绑定 module 的 OpenAPI 快照。需要可用 Auth Key；远程失败时 **不** 回退 stale。
+强制刷新 **所有** 已绑定 module 的 OpenAPI 快照。Apifox Binding 需要可用 Auth Key；自定义 Binding 会重新读取文件或 HTTP(S) URL，不需要 Auth。远程失败时 **不** 回退 stale。
 
 ```bash
 apifox-api refresh

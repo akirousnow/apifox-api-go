@@ -90,3 +90,23 @@ func TestVersionReflectsBuildinfoOverrides(t *testing.T) {
 		t.Fatalf("stdout = %q, want %q", got, want)
 	}
 }
+
+func TestRootHelpMentionsInitCustomUsage(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := cli.Execute(
+		context.Background(),
+		cli.Dependencies{
+			Streams: cli.Streams{Out: &stdout, Err: &stderr},
+		},
+		[]string{"help"},
+	)
+	if err != nil {
+		t.Fatalf("Execute(help) error: %v\nstderr=%q", err, stderr.String())
+	}
+
+	const customUsage = "init [name] --custom <URL|文件路径>"
+	if !strings.Contains(stdout.String(), customUsage) {
+		t.Fatalf("root help missing %q:\n%s", customUsage, stdout.String())
+	}
+}

@@ -60,9 +60,16 @@ func ResolveBinding(options ResolveOptions) (ResolvedBinding, error) {
 		if !ok {
 			continue
 		}
-		authKey, fingerprint, _, authErr := ResolveRuntimeAuthKey(env, candidate.AuthKey, registry.AuthKey)
-		if authErr != nil {
-			return ResolvedBinding{}, authErr
+		var authKey string
+		var fingerprint string
+		if strings.TrimSpace(candidate.CustomSource) != "" {
+			fingerprint = AuthFingerprint("custom:" + candidate.CustomSource)
+		} else {
+			var authErr error
+			authKey, fingerprint, _, authErr = ResolveRuntimeAuthKey(env, candidate.AuthKey, registry.AuthKey)
+			if authErr != nil {
+				return ResolvedBinding{}, authErr
+			}
 		}
 		resolved := ResolvedBinding{
 			ProjectID:       candidate.ProjectID,
@@ -70,6 +77,7 @@ func ResolveBinding(options ResolveOptions) (ResolvedBinding, error) {
 			AuthFingerprint: fingerprint,
 			ModuleIDs:       append([]int(nil), candidate.ModuleIDs...),
 			ProjectName:     candidate.ProjectName,
+			CustomSource:    candidate.CustomSource,
 			WorkspaceDir:    candidateKey,
 			RegistryPath:    registryPath,
 			Source:          fmt.Sprintf("全局注册表 %s -> %s", registryPath, candidateKey),
@@ -89,7 +97,7 @@ func createMissingBindingError(workspaceKey string, checkedKeys []string, bindin
 		checkedLines = append(checkedLines, "- "+key)
 	}
 	return fmt.Errorf(
-		"当前工作目录还没有绑定 Apifox 项目。\n已解析工作目录: %s\n已检查的目录:\n%s\n\n全局注册表中已有的绑定:\n%s\n\n请在目标项目根目录运行:\n  apifox-api init <projectId> [--moduleIds 5,8,12] [--authKey <token>]",
+		"当前工作目录还没有绑定 Apifox 项目或自定义接口文档。\n已解析工作目录: %s\n已检查的目录:\n%s\n\n全局注册表中已有的绑定:\n%s\n\n请在目标项目根目录运行:\n  apifox-api init <projectId> [--moduleIds 5,8,12] [--authKey <token>]\n或:\n  apifox-api init --custom <URL|文件路径>",
 		workspaceKey,
 		strings.Join(checkedLines, "\n"),
 		formatExistingBindingsList(bindings),
@@ -120,7 +128,11 @@ func formatExistingBindingsList(bindings map[string]RegistryBinding) string {
 		if item.ProjectName != "" {
 			nameHint = " (" + item.ProjectName + ")"
 		}
-		lines = append(lines, fmt.Sprintf("- %s -> projectId=%s%s%s", key, item.ProjectID, nameHint, moduleHint))
+		customHint := ""
+		if strings.TrimSpace(item.CustomSource) != "" {
+			customHint = ", custom=true"
+		}
+		lines = append(lines, fmt.Sprintf("- %s -> projectId=%s%s%s%s", key, item.ProjectID, nameHint, moduleHint, customHint))
 	}
 	return strings.Join(lines, "\n")
 }

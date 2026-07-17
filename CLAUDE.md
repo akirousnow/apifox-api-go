@@ -17,8 +17,9 @@ Agent / 协作者入口：项目是什么、怎么开发、怎么发版。
 
 **做什么：** Apifox OpenAPI CLI 的 Go 实现。
 
-- Project Binding：把工作区目录绑到 Apifox `projectId`（全局注册表 `~/.apifox-api.json`）
+- Project Binding：把工作区目录绑到 Apifox `projectId` 或自定义 OpenAPI/Swagger JSON（全局注册表 `~/.apifox-api.json`）
 - 离线优先：OpenAPI 快照缓存在 `<binding>/.cache/apifox-api/`
+- 自定义来源：`init --custom <URL|文件>`，Swagger 2.0 在写入快照前统一归一化
 - 搜索接口（`search` 元数据 / `search-fields` 字段）、`get` 生成 TypeScript 类型、`refresh` 强制拉远程
 
 **命令树：**
@@ -26,7 +27,7 @@ Agent / 协作者入口：项目是什么、怎么开发、怎么发版。
 ```text
 apifox-api
 ├── version
-├── init <projectId> [--moduleIds ...] [--authKey ...]
+├── init [projectId] [--moduleIds ...] [--authKey ...] [--custom URL|文件]
 ├── config set-auth-key <token>
 ├── module [moduleId]
 ├── search [keywords...] [--method] [--mode] [--limit] [--json] [--moduleId]
