@@ -50,7 +50,7 @@ for target in "${TARGETS[@]}"; do
   artifact_path="${artifact_dir}/${binary_name}"
   echo "  -> ${goos}/${goarch}"
   CGO_ENABLED=0 GOOS="${goos}" GOARCH="${goarch}" \
-    "${GO_BIN}" build -trimpath -ldflags "${LDFLAGS}" -o "${artifact_path}" .
+    "${GO_BIN}" build -trimpath -ldflags "${LDFLAGS}" -o "${artifact_path}" ./cmd/apifox-api
 done
 
 # Checksums (SHA-256) for every artifact
