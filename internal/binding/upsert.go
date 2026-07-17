@@ -8,12 +8,13 @@ import (
 
 // UpsertOptions writes or overwrites the Project Binding for the exact cwd key.
 type UpsertOptions struct {
-	CWD         string
-	HomeDir     string
-	ProjectID   string
-	AuthKey     string
-	ModuleIDs   []int
-	ProjectName string
+	CWD          string
+	HomeDir      string
+	ProjectID    string
+	AuthKey      string
+	ModuleIDs    []int
+	ProjectName  string
+	CustomSource string
 }
 
 // UpsertBinding overwrites the exact workspace key binding in the global registry.
@@ -74,6 +75,9 @@ func UpsertBinding(options UpsertOptions) (UpsertResult, error) {
 	}
 	if trimmedName := strings.TrimSpace(options.ProjectName); trimmedName != "" {
 		next.ProjectName = trimmedName
+	}
+	if customSource := strings.TrimSpace(options.CustomSource); customSource != "" {
+		next.CustomSource = customSource
 	}
 
 	if registry.Bindings == nil {

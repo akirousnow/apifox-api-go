@@ -1,6 +1,9 @@
 package cli
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -8,35 +11,54 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/akirousnow/apifox-api-go/internal/binding"
+	"github.com/akirousnow/apifox-api-go/internal/customdoc"
+	"github.com/akirousnow/apifox-api-go/internal/openapi"
+	"github.com/akirousnow/apifox-api-go/internal/snapshot"
 )
 
 const initUsage = `用法: apifox-api init <projectId> [--moduleIds 5,8,12] [--authKey <token>]
+       apifox-api init [name] --custom <URL|文件路径>
 
 说明:
 - 把当前工作目录绑定到一个 Apifox projectId，写入全局注册表 ~/.apifox-api.json。
+- --custom：改为绑定自定义 OpenAPI/Swagger JSON；name 可省略。
 - --moduleIds：逗号分隔的正整数，绑定多个模块；省略表示只使用默认模块。
 - --authKey：Apifox Access Token，会存入全局注册表；省略时回退 APIFOX_AUTH_KEY 环境变量。`
 
 func newInitCommand(dependencies Dependencies) *cobra.Command {
 	var moduleIDsFlag string
 	var authKeyFlag string
+	var customFlag string
 
 	command := &cobra.Command{
-		Use:   "init <projectId>",
-		Short: "Bind the current workspace directory to an Apifox project",
-		Args:  cobra.ExactArgs(1),
+		Use:   "init [projectId]",
+		Short: "Bind workspace: init <projectId> or init [name] --custom <URL|文件路径>",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runInitCommand(dependencies, args[0], moduleIDsFlag, authKeyFlag, cmd)
+			projectID := ""
+			if len(args) == 1 {
+				projectID = args[0]
+			}
+			return runInitCommand(
+				dependencies,
+				projectID,
+				moduleIDsFlag,
+				authKeyFlag,
+				customFlag,
+				cmd.Flags().Changed("custom"),
+				cmd,
+			)
 		},
 	}
 
 	command.Flags().StringVar(&moduleIDsFlag, "moduleIds", "", "comma-separated positive module IDs")
 	command.Flags().StringVar(&authKeyFlag, "authKey", "", "Apifox Access Token stored on this binding")
+	command.Flags().StringVar(&customFlag, "custom", "", "custom OpenAPI JSON URL or local file path")
 	command.SetUsageTemplate(initUsage + "\n")
 	return command
 }
 
-func runInitCommand(dependencies Dependencies, projectIDArg string, moduleIDsRaw string, authKeyFlag string, cmd *cobra.Command) error {
+func runInitCommand(dependencies Dependencies, projectIDArg string, moduleIDsRaw string, authKeyFlag string, customRaw string, customSet bool, cmd *cobra.Command) error {
 	cwd := dependencies.CWD
 	if cwd == "" {
 		return fmt.Errorf("cwd is required")
@@ -48,6 +70,12 @@ func runInitCommand(dependencies Dependencies, projectIDArg string, moduleIDsRaw
 	env := dependencies.Env
 	if env == nil {
 		env = map[string]string{}
+	}
+	if customSet {
+		return runCustomInitCommand(dependencies, projectIDArg, moduleIDsRaw, authKeyFlag, customRaw, cmd)
+	}
+	if strings.TrimSpace(projectIDArg) == "" {
+		return fmt.Errorf("apifox-api init 失败: 请提供 Apifox projectId！\n\n%s", initUsage)
 	}
 
 	projectID, err := binding.ValidateProjectID(projectIDArg)
@@ -170,5 +198,84 @@ func runInitCommand(dependencies Dependencies, projectIDArg string, moduleIDsRaw
 	}
 
 	_, err = fmt.Fprintln(out, strings.Join(lines, "\n"))
+	return err
+}
+
+func runCustomInitCommand(dependencies Dependencies, projectIDArg string, moduleIDsRaw string, authKeyFlag string, customRaw string, cmd *cobra.Command) error {
+	if strings.TrimSpace(moduleIDsRaw) != "" {
+		return fmt.Errorf("apifox-api init 失败: --custom 不能与 --moduleIds 同时使用。\n\n%s", initUsage)
+	}
+	if strings.TrimSpace(authKeyFlag) != "" {
+		return fmt.Errorf("apifox-api init 失败: --custom 不会向自定义地址发送 Apifox Auth Key，不能与 --authKey 同时使用。\n\n%s", initUsage)
+	}
+	projectID := strings.TrimSpace(projectIDArg)
+	if projectID != "" {
+		var err error
+		projectID, err = binding.ValidateProjectID(projectID)
+		if err != nil {
+			return fmt.Errorf("apifox-api init 失败: %w\n\n%s", err, initUsage)
+		}
+	}
+
+	loaded, err := customdoc.Load(cmd.Context(), customRaw, dependencies.CWD)
+	if err != nil {
+		return fmt.Errorf("apifox-api init 失败: %w", err)
+	}
+	normalized, err := openapi.NormalizeCustomDocument(loaded.Data)
+	if err != nil {
+		return fmt.Errorf("apifox-api init 失败: %w", err)
+	}
+
+	if projectID == "" {
+		sum := sha256.Sum256([]byte(loaded.Source))
+		projectID = fmt.Sprintf("custom-%x", sum[:8])
+		projectID, err = binding.ValidateProjectID(projectID)
+		if err != nil {
+			return fmt.Errorf("apifox-api init 失败: %w\n\n%s", err, initUsage)
+		}
+	}
+
+	authFingerprint := binding.AuthFingerprint("custom:" + loaded.Source)
+	allowStale := false
+	loadResult, err := snapshot.LoadModuleSnapshot(snapshot.LoadOptions{
+		WorkspaceDir:      dependencies.CWD,
+		ProjectID:         projectID,
+		AuthFingerprint:   authFingerprint,
+		CustomSource:      loaded.Source,
+		Env:               dependencies.Env,
+		ForceRefresh:      true,
+		AllowStaleOnError: &allowStale,
+		Context:           cmd.Context(),
+		FetchFunc: func(_ context.Context, _ string, _ string, _ *int) (json.RawMessage, error) {
+			return normalized, nil
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("apifox-api init 失败: %w", err)
+	}
+
+	upsert, err := binding.UpsertBinding(binding.UpsertOptions{
+		CWD:          dependencies.CWD,
+		HomeDir:      dependencies.HomeDir,
+		ProjectID:    projectID,
+		ModuleIDs:    []int{},
+		CustomSource: loaded.Source,
+	})
+	if err != nil {
+		return fmt.Errorf("写入全局注册表失败: %w\n\n%s", err, initUsage)
+	}
+
+	lines := []string{
+		"已写入 Custom OpenAPI Binding。",
+		fmt.Sprintf("workspace: %s", upsert.WorkspaceKey),
+		fmt.Sprintf("registry: %s", upsert.RegistryPath),
+		fmt.Sprintf("projectId: %s", projectID),
+		fmt.Sprintf("custom: %s", customdoc.DisplaySource(loaded.Source)),
+		fmt.Sprintf("已缓存自定义接口文档: %s", loadResult.CachePath),
+	}
+	if upsert.PreviousBinding != nil {
+		lines = append(lines, fmt.Sprintf("已覆盖原有绑定: projectId=%s", upsert.PreviousBinding.ProjectID))
+	}
+	_, err = fmt.Fprintln(cmd.OutOrStdout(), strings.Join(lines, "\n"))
 	return err
 }

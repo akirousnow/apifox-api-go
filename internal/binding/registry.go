@@ -132,6 +132,14 @@ func parseRegistryBinding(bindingRaw json.RawMessage, workspaceKey string) (Regi
 		binding.ProjectName = projectName
 	}
 
+	if customRaw, ok := raw["custom"]; ok && string(customRaw) != "null" {
+		var customSource string
+		if err := json.Unmarshal(customRaw, &customSource); err != nil {
+			return RegistryBinding{}, fmt.Errorf("无效的 Apifox 绑定记录: %s 的 custom 必须是字符串。", workspaceKey)
+		}
+		binding.CustomSource = strings.TrimSpace(customSource)
+	}
+
 	if moduleRaw, ok := raw["moduleIds"]; ok && string(moduleRaw) != "null" {
 		var moduleIDs []int
 		if err := json.Unmarshal(moduleRaw, &moduleIDs); err != nil {

@@ -138,13 +138,14 @@ func runGetCommand(dependencies Dependencies, cmd *cobra.Command, input getComma
 		return err
 	}
 
-	authFingerprint := binding.AuthFingerprint(resolved.AuthKey)
+	authFingerprint := resolved.AuthFingerprint
 	allowStale := true
 	loadResult, err := snapshot.LoadModuleSnapshot(snapshot.LoadOptions{
 		WorkspaceDir:      resolved.WorkspaceDir,
 		ProjectID:         resolved.ProjectID,
 		AuthKey:           resolved.AuthKey,
 		AuthFingerprint:   authFingerprint,
+		CustomSource:      resolved.CustomSource,
 		ModuleID:          currentModule,
 		Env:               env,
 		AllowStaleOnError: &allowStale,

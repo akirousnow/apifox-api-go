@@ -39,12 +39,12 @@ func runRefreshCommand(dependencies Dependencies, cmd *cobra.Command) error {
 	}
 
 	authKey := strings.TrimSpace(resolved.AuthKey)
-	if authKey == "" {
+	if authKey == "" && strings.TrimSpace(resolved.CustomSource) == "" {
 		return fmt.Errorf("apifox-api refresh 失败: 缺少 Auth Key，无法从远程拉取 OpenAPI 快照。")
 	}
 
 	moduleIDs := binding.ModulesForRefresh(resolved.ModuleIDs)
-	authFingerprint := binding.AuthFingerprint(authKey)
+	authFingerprint := resolved.AuthFingerprint
 	allowStale := false
 
 	results, err := snapshot.LoadAllModuleSnapshots(
@@ -55,6 +55,7 @@ func runRefreshCommand(dependencies Dependencies, cmd *cobra.Command) error {
 		moduleIDs,
 		snapshot.LoadOptions{
 			Env:               env,
+			CustomSource:      resolved.CustomSource,
 			ForceRefresh:      true,
 			AllowStaleOnError: &allowStale,
 			Context:           cmd.Context(),

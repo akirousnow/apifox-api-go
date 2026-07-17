@@ -10,6 +10,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/akirousnow/apifox-api-go/internal/customdoc"
+	"github.com/akirousnow/apifox-api-go/internal/openapi"
 )
 
 // LoadResult is a loaded OpenAPI Snapshot (local cache and/or remote refresh).
@@ -27,8 +30,10 @@ type LoadOptions struct {
 	WorkspaceDir    string
 	ProjectID       string
 	AuthFingerprint string
-	ModuleID        *int
-	Env             map[string]string
+	// CustomSource replaces the Apifox exporter with a user-provided file or URL.
+	CustomSource string
+	ModuleID     *int
+	Env          map[string]string
 	// NowMs overrides the clock for tests (milliseconds since epoch).
 	NowMs int64
 
@@ -138,8 +143,12 @@ func LoadModuleSnapshot(options LoadOptions) (LoadResult, error) {
 
 	// Fresh cache hit: no network I/O.
 	if !options.ForceRefresh && matchedOK && IsFresh(matchedEnvelope, nowMs, ttlMs) {
+		data, normalizeErr := openapi.NormalizeDocument(matchedEnvelope.Data)
+		if normalizeErr != nil {
+			return LoadResult{}, fmt.Errorf("无法解析 OpenAPI 快照: %w", normalizeErr)
+		}
 		return LoadResult{
-			Data:      matchedEnvelope.Data,
+			Data:      data,
 			CachePath: cachePath,
 			Stale:     false,
 			ModuleID:  options.ModuleID,
@@ -156,15 +165,23 @@ func LoadModuleSnapshot(options LoadOptions) (LoadResult, error) {
 			)
 		}
 		if IsFresh(matchedEnvelope, nowMs, ttlMs) {
+			data, normalizeErr := openapi.NormalizeDocument(matchedEnvelope.Data)
+			if normalizeErr != nil {
+				return LoadResult{}, fmt.Errorf("无法解析 OpenAPI 快照: %w", normalizeErr)
+			}
 			return LoadResult{
-				Data:      matchedEnvelope.Data,
+				Data:      data,
 				CachePath: cachePath,
 				Stale:     false,
 				ModuleID:  options.ModuleID,
 			}, nil
 		}
+		data, normalizeErr := openapi.NormalizeDocument(matchedEnvelope.Data)
+		if normalizeErr != nil {
+			return LoadResult{}, fmt.Errorf("无法解析 OpenAPI 快照: %w", normalizeErr)
+		}
 		return LoadResult{
-			Data:      matchedEnvelope.Data,
+			Data:      data,
 			CachePath: cachePath,
 			Stale:     true,
 			Warning:   "OpenAPI 快照已过期，已使用本地缓存（离线模式；可稍后运行 apifox-api refresh）。",
@@ -173,7 +190,7 @@ func LoadModuleSnapshot(options LoadOptions) (LoadResult, error) {
 	}
 
 	// Remote refresh requires Auth Key.
-	if strings.TrimSpace(options.AuthKey) == "" {
+	if strings.TrimSpace(options.AuthKey) == "" && strings.TrimSpace(options.CustomSource) == "" {
 		return LoadResult{}, fmt.Errorf(
 			"刷新 OpenAPI 快照失败 (moduleId=%s): 缺少 Auth Key，无法从远程拉取 OpenAPI 快照。",
 			moduleIDFilePartForError(options.ModuleID),
@@ -183,9 +200,16 @@ func LoadModuleSnapshot(options LoadOptions) (LoadResult, error) {
 	// Remote refresh path.
 	fetchFunc := options.FetchFunc
 	if fetchFunc == nil {
-		client := NewDefaultHTTPClient()
-		fetchFunc = func(ctx context.Context, projectID string, authKey string, moduleID *int) (json.RawMessage, error) {
-			return FetchOpenAPIExport(ctx, client, projectID, authKey, moduleID)
+		if strings.TrimSpace(options.CustomSource) != "" {
+			fetchFunc = func(ctx context.Context, _ string, _ string, _ *int) (json.RawMessage, error) {
+				loaded, loadErr := customdoc.Load(ctx, options.CustomSource, options.WorkspaceDir)
+				return json.RawMessage(loaded.Data), loadErr
+			}
+		} else {
+			client := NewDefaultHTTPClient()
+			fetchFunc = func(ctx context.Context, projectID string, authKey string, moduleID *int) (json.RawMessage, error) {
+				return FetchOpenAPIExport(ctx, client, projectID, authKey, moduleID)
+			}
 		}
 	}
 
@@ -195,6 +219,13 @@ func LoadModuleSnapshot(options LoadOptions) (LoadResult, error) {
 	}
 
 	data, fetchErr := fetchFunc(ctx, options.ProjectID, options.AuthKey, options.ModuleID)
+	if fetchErr == nil {
+		if strings.TrimSpace(options.CustomSource) != "" {
+			data, fetchErr = openapi.NormalizeCustomDocument(data)
+		} else {
+			data, fetchErr = openapi.NormalizeDocument(data)
+		}
+	}
 	if fetchErr == nil {
 		envelope := Envelope{
 			Timestamp:        nowMs,
@@ -225,8 +256,12 @@ func LoadModuleSnapshot(options LoadOptions) (LoadResult, error) {
 	// when a matching cache exists and AllowStaleOnError is enabled.
 	// Transient is defined narrowly (timeout / connection / 5xx); auth/4xx hard-fail.
 	if !options.ForceRefresh && allowStaleOnError(options) && matchedOK && IsTransientExportError(fetchErr) {
+		data, normalizeErr := openapi.NormalizeDocument(matchedEnvelope.Data)
+		if normalizeErr != nil {
+			return LoadResult{}, fmt.Errorf("无法解析 OpenAPI 快照: %w", normalizeErr)
+		}
 		return LoadResult{
-			Data:      matchedEnvelope.Data,
+			Data:      data,
 			CachePath: cachePath,
 			Stale:     true,
 			Warning:   fmt.Sprintf("OpenAPI 快照刷新失败，已使用本地过期缓存: %s", fetchErr.Error()),
