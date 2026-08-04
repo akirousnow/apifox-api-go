@@ -45,11 +45,18 @@ func Load(ctx context.Context, source string, baseDir string) (Loaded, error) {
 	path := trimmed
 	if parsed.Scheme == "file" {
 		if parsed.Host != "" && parsed.Host != "localhost" {
-			return Loaded{}, fmt.Errorf("file URL 只支持本机路径，收到 host=%s。", parsed.Host)
+			if runtime.GOOS == "windows" && len(parsed.Host) == 2 && parsed.Host[1] == ':' {
+				path = parsed.Host + parsed.Path
+			} else {
+				return Loaded{}, fmt.Errorf("file URL 只支持本机路径，收到 host=%s。", parsed.Host)
+			}
+		} else {
+			path = parsed.Path
 		}
-		path, err = url.PathUnescape(parsed.Path)
-		if err != nil {
-			return Loaded{}, fmt.Errorf("解析 file URL 失败: %w", err)
+		var unerr error
+		path, unerr = url.PathUnescape(path)
+		if unerr != nil {
+			return Loaded{}, fmt.Errorf("解析 file URL 失败: %w", unerr)
 		}
 		path = filepath.FromSlash(path)
 		if runtime.GOOS == "windows" && len(path) >= 3 && path[0] == filepath.Separator && path[2] == ':' {
