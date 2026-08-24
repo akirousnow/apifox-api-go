@@ -16,8 +16,17 @@ func NormalizeDocument(data []byte) (json.RawMessage, error) {
 	if document == nil {
 		return nil, fmt.Errorf("接口文档必须是 JSON 对象。")
 	}
+	if dataMap, ok := document["data"].(map[string]any); ok {
+		if dataMap["paths"] != nil || dataMap["swagger"] != nil || dataMap["openapi"] != nil {
+			document = dataMap
+		}
+	}
 	if swagger, _ := document["swagger"].(string); swagger != "2.0" {
-		return append(json.RawMessage(nil), data...), nil
+		normalized, err := json.Marshal(document)
+		if err != nil {
+			return nil, fmt.Errorf("序列化接口文档失败: %w", err)
+		}
+		return normalized, nil
 	}
 
 	normalizeSwagger2(document)

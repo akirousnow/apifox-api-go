@@ -345,3 +345,33 @@ func TestCollectOperationFieldsWildcardResponse(t *testing.T) {
 		t.Fatalf("expected logisticsAddress in wildcard response fields, got: %+v", index.ResponseFields)
 	}
 }
+
+func TestNormalizeDocumentEnvelope(t *testing.T) {
+	envelope := []byte(`{
+  "timestamp": 123456789,
+  "projectId": "test-p",
+  "data": {
+    "openapi": "3.0.1",
+    "paths": {
+      "/test": {
+        "get": {
+          "responses": {
+            "200": { "description": "ok" }
+          }
+        }
+      }
+    }
+  }
+}`)
+	normalized, err := NormalizeCustomDocument(envelope)
+	if err != nil {
+		t.Fatalf("expected success on envelope, got: %v", err)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(normalized, &doc); err != nil {
+		t.Fatal(err)
+	}
+	if doc["paths"] == nil {
+		t.Fatalf("expected unwrapped paths at root")
+	}
+}
