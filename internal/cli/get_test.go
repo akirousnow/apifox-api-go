@@ -136,6 +136,95 @@ func TestGetCommand_MethodPathAndPathOnly(t *testing.T) {
 	}
 }
 
+func TestGetCommand_WildcardResponse(t *testing.T) {
+	homeDir := t.TempDir()
+	cwd := filepath.Join(homeDir, "app")
+	if err := os.MkdirAll(cwd, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	authKey := "test-auth-key-wildcard"
+	_, err := binding.UpsertBinding(binding.UpsertOptions{
+		CWD:       cwd,
+		HomeDir:   homeDir,
+		ProjectID: "99999",
+		AuthKey:   authKey,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	openapiDoc := json.RawMessage(`{
+  "openapi": "3.0.1",
+  "paths": {
+    "/app-api/app/base/customer/page": {
+      "get": {
+        "operationId": "getCustomerPage",
+        "summary": "获得客户分页",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultPageResultCustomerRespVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CommonResultPageResultCustomerRespVO": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer" },
+          "data": { "$ref": "#/components/schemas/CustomerVO" }
+        }
+      },
+      "CustomerVO": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" }
+        }
+      }
+    }
+  }
+}`)
+
+	cachePath := snapshot.GetOpenAPICachePathForWorkspace(cwd, snapshot.CacheIdentity{
+		ProjectID:       "99999",
+		AuthFingerprint: binding.AuthFingerprint(authKey),
+	})
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeGetEnvelope(cachePath, snapshot.Envelope{
+		Timestamp:        time.Now().UnixMilli(),
+		ProjectID:        "99999",
+		AuthFingerprint:  binding.AuthFingerprint(authKey),
+		ExportAPIVersion: snapshot.OpenAPIExportAPIVersion,
+		ExportParamsHash: snapshot.ExportParamsHash(),
+		Data:             openapiDoc,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout, stderr, err := runGetCLI(homeDir, cwd, []string{"get", "GET", "/app-api/app/base/customer/page"})
+	if err != nil {
+		t.Fatalf("get failed: %v\nstderr=%s\nstdout=%s", err, stderr, stdout)
+	}
+	if !strings.Contains(stdout, "export type GetCustomerPageResponse = CommonResultPageResultCustomerRespVO;") {
+		t.Fatalf("expected GetCustomerPageResponse in stdout:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "export interface CustomerVO") {
+		t.Fatalf("expected CustomerVO in stdout:\n%s", stdout)
+	}
+}
+
 func TestGetCommand_InvalidMethod(t *testing.T) {
 	homeDir := t.TempDir()
 	cwd := filepath.Join(homeDir, "app")

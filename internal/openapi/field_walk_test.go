@@ -284,3 +284,64 @@ func TestCollectOperationFieldsDepthCap(t *testing.T) {
 		t.Fatalf("expected near-cap depth, deepest=%s dots=%d", deepest, maxDots)
 	}
 }
+
+func TestCollectOperationFieldsWildcardResponse(t *testing.T) {
+	rawDoc := `{
+  "openapi": "3.0.1",
+  "paths": {
+    "/customer/page": {
+      "get": {
+        "summary": "Customer page",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResp"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PageResp": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CustomerItem" }
+          }
+        }
+      },
+      "CustomerItem": {
+        "type": "object",
+        "properties": {
+          "logisticsAddress": { "type": "string", "description": "物流地址" }
+        }
+      }
+    }
+  }
+}`
+	var doc map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(rawDoc), &doc); err != nil {
+		t.Fatal(err)
+	}
+	schemas := ExtractComponentsSchemas(doc)
+	pathItem, op := pathOperation(t, doc, "/customer/page", "get")
+	index := CollectOperationFields(pathItem, op, schemas, FieldWalkOptions{IncludeResponse: true})
+
+	found := false
+	for _, field := range index.ResponseFields {
+		if field.Name == "logisticsAddress" && field.Description == "物流地址" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected logisticsAddress in wildcard response fields, got: %+v", index.ResponseFields)
+	}
+}
