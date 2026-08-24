@@ -316,6 +316,131 @@ func TestGenTypes_GoldenFiles(t *testing.T) {
 	}
 }
 
+func TestGenTypesForOperation_WildcardAndCustomMediaTypes(t *testing.T) {
+	doc := json.RawMessage(`{
+  "openapi": "3.0.1",
+  "paths": {
+    "/app-api/app/base/customer/page": {
+      "get": {
+        "summary": "获得客户分页",
+        "operationId": "getCustomerPage",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommonResultPageResultCustomerRespVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/with-charset": {
+      "get": {
+        "summary": "Charset param",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json; charset=UTF-8": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/priority": {
+      "get": {
+        "summary": "Priority test",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "type": "object", "properties": { "fromWildcard": { "type": "boolean" } } }
+              },
+              "application/json": {
+                "schema": { "type": "object", "properties": { "fromJson": { "type": "boolean" } } }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CommonResultPageResultCustomerRespVO": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "description": "状态码（0 表示成功）" },
+          "msg": { "type": "string", "description": "提示信息" },
+          "data": { "$ref": "#/components/schemas/PageResultCustomerRespVO" }
+        }
+      },
+      "PageResultCustomerRespVO": {
+        "type": "object",
+        "properties": {
+          "total": { "type": "integer", "format": "int64", "description": "总数" },
+          "list": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CustomerRespVO" }
+          }
+        }
+      },
+      "CustomerRespVO": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "客户ID" },
+          "code": { "type": "string", "description": "客户编号" },
+          "name": { "type": "string", "description": "客户名称" },
+          "shortName": { "type": "string", "description": "简称" },
+          "mobile": { "type": "string", "description": "联系电话" },
+          "status": { "type": "integer", "description": "状态：0正常 1停用" }
+        }
+      }
+    }
+  }
+}`)
+
+	// 1. Test */* wildcard response
+	output, err := GenTypesForOperation(doc, "get", "/app-api/app/base/customer/page")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertContains(t, output, "export type GetCustomerPageResponse = CommonResultPageResultCustomerRespVO;")
+	assertContains(t, output, "export interface CommonResultPageResultCustomerRespVO {")
+	assertContains(t, output, "export interface PageResultCustomerRespVO {")
+	assertContains(t, output, "export interface CustomerRespVO {")
+	assertContains(t, output, "/** 状态码（0 表示成功） */")
+	assertContains(t, output, "/** 客户ID */")
+	assertContains(t, output, "list?: Array<CustomerRespVO>;")
+
+	// 2. Test charset parameter
+	output, err = GenTypesForOperation(doc, "get", "/api/with-charset")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertContains(t, output, "token?: string")
+
+	// 3. Test priority: application/json should be chosen over */*
+	output, err = GenTypesForOperation(doc, "get", "/api/priority")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertContains(t, output, "fromJson?: boolean")
+	if strings.Contains(output, "fromWildcard") {
+		t.Fatalf("expected application/json to take priority over */*, got:\n%s", output)
+	}
+}
+
 func assertContains(t *testing.T, haystack string, needle string) {
 	t.Helper()
 	if !strings.Contains(haystack, needle) {

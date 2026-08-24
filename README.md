@@ -56,17 +56,6 @@ go build -o apifox-api \
 sha256sum -c checksums.txt
 ```
 
-### npm / npx 兼容（过渡期）
-
-现有 TypeScript 包在 **一个完整稳定周期内** 仍可使用：
-
-```bash
-npm install -g apifox-api
-npx apifox-api <command>
-```
-
-Go 二进制是推荐的新安装路径；npm 入口用于平滑迁移，详见 [RELEASE.md](./RELEASE.md)。
-
 ## 快速开始
 
 ```bash

@@ -166,6 +166,34 @@ func mergeIndexedParameters(
 	return result
 }
 
+func cleanMediaType(mediaType string) string {
+	lower := strings.ToLower(strings.TrimSpace(mediaType))
+	if idx := strings.IndexByte(lower, ';'); idx != -1 {
+		lower = strings.TrimSpace(lower[:idx])
+	}
+	return lower
+}
+
+func responseMediaTypeScore(mediaType string) int {
+	clean := cleanMediaType(mediaType)
+	switch {
+	case clean == "application/json":
+		return 100
+	case strings.HasSuffix(clean, "+json"):
+		return 90
+	case clean == "text/json" || clean == "text/x-json" || clean == "application/x-json":
+		return 80
+	case clean == "*/*":
+		return 70
+	case clean == "application/*":
+		return 60
+	case clean != "":
+		return 10
+	default:
+		return 0
+	}
+}
+
 func selectRequestBodySchema(operation map[string]json.RawMessage) json.RawMessage {
 	requestBodyRaw, ok := operation["requestBody"]
 	if !ok {
@@ -177,6 +205,9 @@ func selectRequestBodySchema(operation map[string]json.RawMessage) json.RawMessa
 	}
 	contentRaw, ok := requestBody["content"]
 	if !ok {
+		if schemaRaw, ok := requestBody["schema"]; ok && len(schemaRaw) > 0 {
+			return schemaRaw
+		}
 		return nil
 	}
 	var content map[string]json.RawMessage
@@ -190,14 +221,14 @@ func selectRequestBodySchema(operation map[string]json.RawMessage) json.RawMessa
 	}
 	for _, mediaType := range preferred {
 		for candidate, entryRaw := range content {
-			if strings.ToLower(candidate) != mediaType {
+			if cleanMediaType(candidate) != mediaType {
 				continue
 			}
 			var entry map[string]json.RawMessage
 			if err := json.Unmarshal(entryRaw, &entry); err != nil {
 				continue
 			}
-			if schemaRaw, ok := entry["schema"]; ok {
+			if schemaRaw, ok := entry["schema"]; ok && len(schemaRaw) > 0 {
 				return schemaRaw
 			}
 		}
@@ -207,7 +238,7 @@ func selectRequestBodySchema(operation map[string]json.RawMessage) json.RawMessa
 		if err := json.Unmarshal(entryRaw, &entry); err != nil {
 			continue
 		}
-		if schemaRaw, ok := entry["schema"]; ok {
+		if schemaRaw, ok := entry["schema"]; ok && len(schemaRaw) > 0 {
 			return schemaRaw
 		}
 	}
@@ -251,6 +282,9 @@ func selectPrimarySuccessJSONSchema(operation map[string]json.RawMessage) json.R
 }
 
 func isTwoXXStatus(statusCode string) bool {
+	if strings.EqualFold(statusCode, "2xx") {
+		return true
+	}
 	if len(statusCode) != 3 || statusCode[0] != '2' {
 		return false
 	}
@@ -262,38 +296,42 @@ func jsonSchemaFromResponse(responseRaw json.RawMessage) json.RawMessage {
 	if err := json.Unmarshal(responseRaw, &response); err != nil {
 		return nil
 	}
-	contentRaw, ok := response["content"]
-	if !ok {
-		return nil
-	}
-	var content map[string]json.RawMessage
-	if err := json.Unmarshal(contentRaw, &content); err != nil {
-		return nil
-	}
+	if contentRaw, ok := response["content"]; ok {
+		var content map[string]json.RawMessage
+		if err := json.Unmarshal(contentRaw, &content); err == nil {
+			mediaTypes := make([]string, 0, len(content))
+			for mediaType := range content {
+				mediaTypes = append(mediaTypes, mediaType)
+			}
+			sort.Strings(mediaTypes)
 
-	var exact json.RawMessage
-	var suffix json.RawMessage
-	for mediaType, entryRaw := range content {
-		lower := strings.ToLower(mediaType)
-		var entry map[string]json.RawMessage
-		if err := json.Unmarshal(entryRaw, &entry); err != nil {
-			continue
-		}
-		schemaRaw, ok := entry["schema"]
-		if !ok || len(schemaRaw) == 0 {
-			continue
-		}
-		if lower == "application/json" && len(exact) == 0 {
-			exact = schemaRaw
-		}
-		if strings.HasSuffix(lower, "+json") && len(suffix) == 0 {
-			suffix = schemaRaw
+			var bestSchema json.RawMessage
+			bestScore := -1
+			for _, mediaType := range mediaTypes {
+				entryRaw := content[mediaType]
+				var entry map[string]json.RawMessage
+				if err := json.Unmarshal(entryRaw, &entry); err != nil {
+					continue
+				}
+				schemaRaw, ok := entry["schema"]
+				if !ok || len(schemaRaw) == 0 {
+					continue
+				}
+				score := responseMediaTypeScore(mediaType)
+				if score > bestScore {
+					bestScore = score
+					bestSchema = schemaRaw
+				}
+			}
+			if len(bestSchema) > 0 {
+				return bestSchema
+			}
 		}
 	}
-	if len(exact) > 0 {
-		return exact
+	if schemaRaw, ok := response["schema"]; ok && len(schemaRaw) > 0 {
+		return schemaRaw
 	}
-	return suffix
+	return nil
 }
 
 // walkSchemaFields recursively collects property name + description from a schema.

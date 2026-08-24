@@ -304,28 +304,58 @@ type mediaSchema struct {
 	schemaRaw json.RawMessage
 }
 
+func cleanMediaType(mediaType string) string {
+	lower := strings.ToLower(strings.TrimSpace(mediaType))
+	if idx := strings.IndexByte(lower, ';'); idx != -1 {
+		lower = strings.TrimSpace(lower[:idx])
+	}
+	return lower
+}
+
+func responseMediaTypeScore(mediaType string) int {
+	clean := cleanMediaType(mediaType)
+	switch {
+	case clean == "application/json":
+		return 100
+	case strings.HasSuffix(clean, "+json"):
+		return 90
+	case clean == "text/json" || clean == "text/x-json" || clean == "application/x-json":
+		return 80
+	case clean == "*/*":
+		return 70
+	case clean == "application/*":
+		return 60
+	case clean != "":
+		return 10
+	default:
+		return 0
+	}
+}
+
 func selectJSONContent(content OrderedObject) *mediaSchema {
-	var exact *mediaSchema
-	var suffix *mediaSchema
+	var bestCandidate *mediaSchema
+	bestScore := -1
+
 	for _, mediaType := range content.Keys {
-		lower := strings.ToLower(mediaType)
-		entry, err := ParseOrderedObject(content.Values[mediaType])
+		rawVal, ok := content.Values[mediaType]
+		if !ok {
+			continue
+		}
+		entry, err := ParseOrderedObject(rawVal)
 		if err != nil {
 			continue
 		}
 		schemaRaw, _ := entry.Get("schema")
-		candidate := &mediaSchema{mediaType: mediaType, schemaRaw: schemaRaw}
-		if lower == "application/json" && exact == nil {
-			exact = candidate
+		if len(schemaRaw) == 0 {
+			continue
 		}
-		if strings.HasSuffix(lower, "+json") && suffix == nil {
-			suffix = candidate
+		score := responseMediaTypeScore(mediaType)
+		if score > bestScore {
+			bestScore = score
+			bestCandidate = &mediaSchema{mediaType: mediaType, schemaRaw: schemaRaw}
 		}
 	}
-	if exact != nil {
-		return exact
-	}
-	return suffix
+	return bestCandidate
 }
 
 func selectRequestBodyContent(operation OrderedObject) *mediaSchema {
@@ -339,6 +369,9 @@ func selectRequestBodyContent(operation OrderedObject) *mediaSchema {
 	}
 	contentRaw, ok := requestBody.Get("content")
 	if !ok {
+		if schemaRaw, ok := requestBody.Get("schema"); ok && len(schemaRaw) > 0 {
+			return &mediaSchema{mediaType: "application/json", schemaRaw: schemaRaw}
+		}
 		return nil
 	}
 	content, err := ParseOrderedObject(contentRaw)
@@ -348,7 +381,7 @@ func selectRequestBodyContent(operation OrderedObject) *mediaSchema {
 	preferred := []string{"application/json", "application/x-www-form-urlencoded", "multipart/form-data"}
 	for _, mediaType := range preferred {
 		for _, candidate := range content.Keys {
-			if strings.ToLower(candidate) == mediaType {
+			if cleanMediaType(candidate) == mediaType {
 				entry, err := ParseOrderedObject(content.Values[candidate])
 				if err != nil {
 					continue
@@ -376,6 +409,16 @@ type responseSchema struct {
 	schemaRaw  json.RawMessage
 }
 
+func isTwoXXStatus(statusCode string) bool {
+	if strings.EqualFold(statusCode, "2xx") {
+		return true
+	}
+	if len(statusCode) != 3 || statusCode[0] != '2' {
+		return false
+	}
+	return statusCode[1] >= '0' && statusCode[1] <= '9' && statusCode[2] >= '0' && statusCode[2] <= '9'
+}
+
 func selectPrimarySuccessJSON(operation OrderedObject) *responseSchema {
 	responsesRaw, ok := operation.Get("responses")
 	if !ok {
@@ -391,10 +434,13 @@ func selectPrimarySuccessJSON(operation OrderedObject) *responseSchema {
 			if contentRaw, ok := status200.Get("content"); ok {
 				content, err := ParseOrderedObject(contentRaw)
 				if err == nil {
-					if selected := selectJSONContent(content); selected != nil {
+					if selected := selectJSONContent(content); selected != nil && len(selected.schemaRaw) > 0 {
 						return &responseSchema{statusCode: "200", mediaType: selected.mediaType, schemaRaw: selected.schemaRaw}
 					}
 				}
+			}
+			if schemaRaw, ok := status200.Get("schema"); ok && len(schemaRaw) > 0 {
+				return &responseSchema{statusCode: "200", mediaType: "application/json", schemaRaw: schemaRaw}
 			}
 		}
 	}
@@ -402,29 +448,24 @@ func selectPrimarySuccessJSON(operation OrderedObject) *responseSchema {
 		if statusCode == "200" {
 			continue
 		}
-		if len(statusCode) != 3 || statusCode[0] != '2' {
-			continue
-		}
-		if statusCode[1] < '0' || statusCode[1] > '9' || statusCode[2] < '0' || statusCode[2] > '9' {
+		if !isTwoXXStatus(statusCode) {
 			continue
 		}
 		response, err := ParseOrderedObject(responses.Values[statusCode])
 		if err != nil {
 			continue
 		}
-		contentRaw, ok := response.Get("content")
-		if !ok {
-			continue
+		if contentRaw, ok := response.Get("content"); ok {
+			content, err := ParseOrderedObject(contentRaw)
+			if err == nil {
+				if selected := selectJSONContent(content); selected != nil && len(selected.schemaRaw) > 0 {
+					return &responseSchema{statusCode: statusCode, mediaType: selected.mediaType, schemaRaw: selected.schemaRaw}
+				}
+			}
 		}
-		content, err := ParseOrderedObject(contentRaw)
-		if err != nil {
-			continue
+		if schemaRaw, ok := response.Get("schema"); ok && len(schemaRaw) > 0 {
+			return &responseSchema{statusCode: statusCode, mediaType: "application/json", schemaRaw: schemaRaw}
 		}
-		selected := selectJSONContent(content)
-		if selected == nil {
-			continue
-		}
-		return &responseSchema{statusCode: statusCode, mediaType: selected.mediaType, schemaRaw: selected.schemaRaw}
 	}
 	return nil
 }
