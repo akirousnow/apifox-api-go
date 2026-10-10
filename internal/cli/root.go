@@ -47,7 +47,7 @@ func NewRoot(dependencies Dependencies) *cobra.Command {
 	rootCommand.SetOut(dependencies.Streams.Out)
 	rootCommand.SetErr(dependencies.Streams.Err)
 
-	rootCommand.Version = buildinfo.Version
+	rootCommand.Version = buildinfo.VersionString()
 	rootCommand.SetVersionTemplate(buildinfo.Format() + "\n")
 
 	rootCommand.AddCommand(newVersionCommand(dependencies))
